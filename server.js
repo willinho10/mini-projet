@@ -128,15 +128,19 @@ app.post('/api/register', async (req, res) => {
 })
 
 app.post('/api/reservations', auth, async (req, res) => {
-	const {resourceId, dateDebut, dateFin} = req.body;
+	const {ressourceId, dateDebut, dateFin} = req.body;
 	let conflicts = [];
 
 	// check for conflicts with existing reservations
-	for(let i = 0; i < resourceId.length; i++) {
+	console.log(req.body);
+	console.log(ressourceId);
+	console.log(dateDebut);
+	console.log(dateFin);
+	for(let i = 0; i < ressourceId.length; i++) {
 		const existingReservation = await Reservation.findOne(
-			{ resourceId: resourceId[i], dateDebut: { $lte: dateFin }, dateFin: { $gte: dateDebut } });
+			{ ressourceId: ressourceId[i], dateDebut: { $lte: dateFin }, dateFin: { $gte: dateDebut } });
 		if (existingReservation) {
-			conflicts.push(resourceId[i]);
+			conflicts.push(ressourceId[i]);
 		}
 	}
 	if (conflicts.length > 0) {
@@ -144,8 +148,8 @@ app.post('/api/reservations', auth, async (req, res) => {
 	}
 
 // create new reservation
-	for(let i = 0; i < resourceId.length; i++) {
-		const reservation = new Reservation({resourceId: resourceId[i], dateDebut, dateFin});
+	for(let i = 0; i < ressourceId.length; i++) {
+		const reservation = new Reservation({ressourceId: ressourceId[i], dateDebut, dateFin});
 		await reservation.save();
 	}
 
