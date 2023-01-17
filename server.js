@@ -75,13 +75,13 @@ app.post('/api/login', async (req, res) => {
 	const { username, password } = req.body
 	const user = await User.findOne({ username }).lean()
 	if (!user) {
-		return res.render(path.join(__dirname, 'views', 'error.ejs'), {error : "Incorrect username or password"});
+		return res.render(path.join(__dirname, 'views', 'error.ejs'), {error : "Incorrect username or password", redirect : "/login"});
 	} else if (await bcrypt.compare(password, user.password)){
 		req.session.user = {username : username};
 		res.redirect("/home");
 	}
 	else {
-		return res.render(path.join(__dirname, 'views', 'error.ejs'), {error : "Incorrect username or password"});
+		return res.render(path.join(__dirname, 'views', 'error.ejs'), {error : "Incorrect username or password", redirect : "/login"});
 	}
 });
 
@@ -168,7 +168,8 @@ app.post('/api/reservations', auth, async (req, res) => {
 			await reservation.save();
 		}
 	} catch (error) {
-		return res.render(path.join(__dirname, 'views','error.ejs'), {error : "La création de la réservation a échoué. Veuillez réessayer ultérieurement."});
+		return res.render(path.join(__dirname, 'views','error.ejs'),
+			{error : "La création de la réservation a échoué. Veuillez réessayer ultérieurement.", redirect: "/reservations"});
 		console.log(error);
 	}
 
@@ -180,12 +181,12 @@ app.post('/api/reservations/delete', auth, async (req, res) => {
 	try {
 		const deletedReservation = await Reservation.findByIdAndDelete(req.body.id);
 		if (!deletedReservation) {
-			return res.status(404).render(path.join(__dirname, 'views', 'error.ejs'), {error : "Réservation introuvable"});
+			return res.status(404).render(path.join(__dirname, 'views', 'error.ejs'), {error : "Réservation introuvable", redirect: "/reservations"});
 		}
 		return res.redirect("/reservations");
 	} catch (err) {
 		return res.status(500).render(path.join(__dirname, 'views', 'error.ejs'),
-			{error : "Erreur lors de la suppression de la réservation"});
+			{error : "Erreur lors de la suppression de la réservation", redirect: "/reservations"});
 	}
 });
 
