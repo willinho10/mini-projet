@@ -60,11 +60,13 @@ app.get('/home', auth, function(req, res) {
 	res.render(path.join(__dirname, 'views', 'home.html'), {user: req.session.user.username});
 });
 
-app.get('/reservations', auth, function(req, res) {
-	res.render(path.join(__dirname, 'views', 'reservations.html'), {user: req.session.user.username});
+app.get('/reservations', auth, async function(req, res) {
+	const reservations = await Reservation.find();
+	return res.render(path.join(__dirname, 'views','reservations.ejs'), {user: req.session.user.username, reservations });
 });
 
 app.get('/addReservation', auth, function(req, res) {
+
 	res.render(path.join(__dirname, 'views', 'addReservation.html'), {user: req.session.user.username});
 });
 
@@ -128,46 +130,63 @@ app.post('/api/register', async (req, res) => {
 })
 
 app.post('/api/reservations', auth, async (req, res) => {
-	const {resourceId, dateDebut, dateFin} = req.body;
-	let conflicts = [];
+	try {
+		const {resourceId, dateDebut, dateFin} = req.body;
+		let conflicts = [];
 
-	// check for conflicts with existing reservations
-	for(let i = 0; i < resourceId.length; i++) {
-		const existingReservation = await Reservation.findOne({
-			resourceId: resourceId[i],
-			$or: [
-				{$and: [{dateDebut: {$gte: dateDebut}}, {dateDebut: {$lte: dateFin}}]},
-				{$and: [{dateFin: {$gte: dateDebut}}, {dateFin: {$lte: dateFin}}]},
-				{$and: [{dateDebut: {$lte: dateDebut}}, {dateFin: {$gte: dateFin}}]}
-			]
-		});
-		if (existingReservation) {
-			conflicts.push(resourceId[i]);
+		// check for conflicts with existing reservations
+		for(let i = 0; i < resourceId.length; i++) {
+			const existingReservation = await Reservation.findOne({
+				resourceId: resourceId[i],
+				$or: [
+					{$and: [{dateDebut: {$gte: dateDebut}}, {dateDebut: {$lte: dateFin}}]},
+					{$and: [{dateFin: {$gte: dateDebut}}, {dateFin: {$lte: dateFin}}]},
+					{$and: [{dateDebut: {$lte: dateDebut}}, {dateFin: {$gte: dateFin}}]}
+				]
+			});
+			if (existingReservation) {
+				conflicts.push(resourceId[i]);
+			}
 		}
-	}
-	if (conflicts.length > 0) {
-		return res.json({ status: 'error', error: 'Conflict with existing reservation for resource Ids: ' + conflicts });
+		if (conflicts.length > 0) {
+			const error = {
+				status: 'Conflit de réservation',
+				message: `Votre réservation n'a pas pu aboutir car une autre réservation est déjà en cours pour la(les) ressource(s) : "${conflicts}" durant cette plage horaire.`
+			};
+			return res.render(path.join(__dirname, 'views','conflict.ejs'), {error});
+
+		}
+
+	// create new reservation
+
+		for (let i = 0; i < resourceId.length; i++) {
+			const reservation = new Reservation({
+				resourceId: resourceId[i],
+				dateDebut,
+				dateFin
+			});
+			await reservation.save();
+		}
+	} catch (error) {
+		return res.render(path.join(__dirname, 'views','error.ejs'), {error : "La création de la réservation a échoué. Veuillez réessayer ultérieurement."});
+		console.log(error);
 	}
 
-// create new reservation
-	for(let i = 0; i < resourceId.length; i++) {
-		const reservation = new Reservation({
-			resourceId : resourceId[i],
-			dateDebut,
-			dateFin
-		});
-		await reservation.save();
-	}
 
-
-	return res.json({status: 'success'});
+	return res.redirect("/reservations");
 });
 
-
-// get all reservations
-app.get('/api/reservations', auth, async (req, res) => {
-	const reservations = await Reservation.find();
-	return res.json({ status: 'success', reservations });
+app.post('/api/reservations/delete', auth, async (req, res) => {
+	try {
+		const deletedReservation = await Reservation.findByIdAndDelete(req.body.id);
+		if (!deletedReservation) {
+			return res.status(404).render(path.join(__dirname, 'views', 'error.ejs'), {error : "Réservation introuvable"});
+		}
+		return res.redirect("/reservations");
+	} catch (err) {
+		return res.status(500).render(path.join(__dirname, 'views', 'error.ejs'),
+			{error : "Erreur lors de la suppression de la réservation"});
+	}
 });
 
 
