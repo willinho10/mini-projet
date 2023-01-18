@@ -1,8 +1,27 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Reservations</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.10.2/fullcalendar.min.css" />
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.10.2/fullcalendar.min.js"></script>
+        <script>
+            $(document).ready(function() {
+                $('#calendar').fullCalendar({
+                    events : [
+                        <% reservations.forEach(function(reservation) { %>
+                        {
+                            title : '<%= reservation.resourceId %>',
+                            start : '<%= reservation.dateDebut %>',
+                            end : '<%= reservation.dateFin %>',
+                        },
+                        <% }); %>
+                    ],
+                });
+            });
+        </script>
     </head>
     <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
@@ -31,38 +50,6 @@
             </form>
         </div>
     </nav>
-    <div class="container-fluid">
-        <h1>Mes reservations</h1>
-        <table class="table">
-            <thead>
-            <tr>
-                <th>Ressource</th>
-                <th>Date de début</th>
-                <th>Date de fin</th>
-                <th>Actions</th>
-            </tr>
-            </thead>
-            <tbody>
-            <% reservations.forEach(function(reservation) { %>
-                <tr>
-                    <td><%= reservation.resourceId %></td>
-                    <td><%= reservation.dateDebut %></td>
-                    <td><%= reservation.dateFin %></td>
-                    <td><form method="post" action="/api/reservations/delete">
-                            <input type="hidden" name="id" value="<%= reservation._id %>">
-                            <button class="btn btn-danger" type="submit">Delete</button>
-                        </form></td>
-                </tr>
-            <% }); %>
-            </tbody>
-        </table>
-        <a class="btn btn-success" type="button" href="/addReservation">
-            Add reservation
-        </a>
-    </div>
-    <script>
-        let user = "<%= user %>";
-        document.getElementById("username").innerHTML += user;
-    </script>
+    <div id='calendar'></div>
     </body>
 </html>

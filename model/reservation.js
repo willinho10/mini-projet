@@ -12,6 +12,10 @@ const reservationSchema = new mongoose.Schema({
     dateFin: {
         type: Date,
         required: true
+    },
+    user: {
+        type: String,
+        required: true
     }
 });
 

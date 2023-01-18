@@ -6,6 +6,8 @@ const User = require('./model/user');
 const bcrypt = require('bcryptjs');
 const session = require("express-session");
 const Reservation = require('./model/reservation');
+const rateLimit = require("express-rate-limit");
+
 
 
 mongoose.connect('mongodb://localhost:27017/login-app-db', {
@@ -59,10 +61,14 @@ app.get('/register', function(req, res) {
 app.get('/home', auth, function(req, res) {
 	res.render(path.join(__dirname, 'views', 'home.html'), {user: req.session.user.username});
 });
+app.get('/calendar', auth, async function(req, res) {
+	const reservations = await Reservation.find();
+	res.render(path.join(__dirname, 'views', 'calendar.ejs'), {user: req.session.user.username, reservations});
+});
 
 app.get('/reservations', auth, async function(req, res) {
-	const reservations = await Reservation.find();
-	return res.render(path.join(__dirname, 'views','reservations.ejs'), {user: req.session.user.username, reservations });
+	const reservations = await Reservation.find({user : req.session.user.username});
+	return res.render(path.join(__dirname, 'views','reservations.ejs'), {user: req.session.user.username, reservations});
 });
 
 app.get('/addReservation', auth, function(req, res) {
@@ -92,6 +98,14 @@ app.post('/logout', function(req, res) {
 	req.session.destroy();
 	res.redirect("/login");
 });
+
+const registerLimiter = rateLimit({
+	windowMs: 15 * 60 * 1000, // 15 minutes
+	max: 10000, // limit each IP to 100 requests per windowMs
+	message: "Too many registration attempts. Please try again later."
+});
+
+app.use("/api/register", registerLimiter);
 
 app.post('/api/register', async (req, res) => {
 	const { username, password: plainTextPassword } = req.body
@@ -131,11 +145,11 @@ app.post('/api/register', async (req, res) => {
 
 app.post('/api/reservations', auth, async (req, res) => {
 	try {
-		const {resourceId, dateDebut, dateFin} = req.body;
+		const {resourceId, dateDebut, dateFin, user} = req.body;
 		let conflicts = [];
 
 		// check for conflicts with existing reservations
-		for(let i = 0; i < resourceId.length; i++) {
+		for (let i = 0; i < resourceId.length; i++) {
 			const existingReservation = await Reservation.findOne({
 				resourceId: resourceId[i],
 				$or: [
@@ -153,24 +167,23 @@ app.post('/api/reservations', auth, async (req, res) => {
 				status: 'Conflit de réservation',
 				message: `Votre réservation n'a pas pu aboutir car une autre réservation est déjà en cours pour la(les) ressource(s) : "${conflicts}" durant cette plage horaire.`
 			};
-			return res.render(path.join(__dirname, 'views','conflict.ejs'), {error});
+			return res.render(path.join(__dirname, 'views', 'conflict.ejs'), {error});
 
 		}
-
 	// create new reservation
 
 		for (let i = 0; i < resourceId.length; i++) {
 			const reservation = new Reservation({
 				resourceId: resourceId[i],
 				dateDebut,
-				dateFin
+				dateFin,
+				user
 			});
 			await reservation.save();
 		}
 	} catch (error) {
 		return res.render(path.join(__dirname, 'views','error.ejs'),
 			{error : "La création de la réservation a échoué. Veuillez réessayer ultérieurement.", redirect: "/reservations"});
-		console.log(error);
 	}
 
 
