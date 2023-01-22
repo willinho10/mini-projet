@@ -58,9 +58,28 @@ app.get('/login', function(req, res) {
 app.get('/register', function(req, res) {
 	res.render(path.join(__dirname, 'views', 'register.html'));
 });
-app.get('/home', auth, function(req, res) {
-	res.render(path.join(__dirname, 'views', 'home.html'), {user: req.session.user.username});
+app.get('/home', auth, async (req, res) => {
+	// Récupérer les réservations existantes à partir de la base de données
+	const reservations = await Reservation.find({});
+
+	// Filtrer les réservations pour n'obtenir que les ressources disponibles
+	const currentDate = new Date();
+	const availableResources = reservations.filter(reservation => {
+		return reservation.dateFin < currentDate;
+	});
+
+	// Récupérer les ID des ressources disponibles
+	const availableResourceIds = availableResources.map(reservation => {
+		return reservation.resourceId;
+	});
+
+	// Envoyer les ID de ressources disponibles à la vue
+	res.render(path.join(__dirname, 'views', 'home.ejs'), {
+		user: req.session.user.username,
+		availableResourceIds
+	});
 });
+
 app.get('/calendar', auth, async function(req, res) {
 	const reservations = await Reservation.find();
 	res.render(path.join(__dirname, 'views', 'calendar.ejs'), {user: req.session.user.username, reservations});
@@ -147,6 +166,9 @@ app.post('/api/reservations', auth, async (req, res) => {
 	try {
 		const {resourceId, dateDebut, dateFin, user} = req.body;
 		let conflicts = [];
+        if (dateDebut > dateFin) {
+            return res.render(path.join(__dirname, 'views', 'error.ejs'), {error : "La date de début doit être antérieure à la date de fin", redirect : "/addReservation"});
+        }
 
 		// check for conflicts with existing reservations
 		for (let i = 0; i < resourceId.length; i++) {

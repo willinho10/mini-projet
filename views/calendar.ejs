@@ -10,17 +10,31 @@
         <script>
             $(document).ready(function() {
                 $('#calendar').fullCalendar({
+                    locale : 'fr',
                     events : [
                         <% reservations.forEach(function(reservation) { %>
                         {
-                            title : '<%= reservation.resourceId %>',
                             start : '<%= reservation.dateDebut %>',
                             end : '<%= reservation.dateFin %>',
+                            resourceId: '<%= reservation.resourceId %>',
+                            user: '<%= reservation.user %>'
                         },
                         <% }); %>
                     ],
+                    eventRender: function(event, element) {
+                        if (event.user == user) {
+                            element.css('background-color', 'green');
+                        }
+                        element.find('.fc-title').text(event.resourceId);
+                        element.on('click', function() {
+                            let start = moment(event.start).format('DD/MM/YYYY HH:mm');
+                            let end = moment(event.end).format('DD/MM/YYYY HH:mm');
+                            alert('Ressource: ' + event.resourceId + '\nDate de début de réservation: ' + start + '\nDate de fin de réservation: ' + end+ '\nUtilisateur: ' + event.user);
+                        });
+                    }
                 });
             });
+
         </script>
     </head>
     <body>
@@ -51,5 +65,9 @@
         </div>
     </nav>
     <div id='calendar'></div>
+    <script>
+        let user = "<%= user %>";
+        document.getElementById("username").innerHTML += user;
+    </script>
     </body>
 </html>
