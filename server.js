@@ -62,7 +62,6 @@ app.get('/register', function(req, res) {
 });
 app.get('/home', auth, async (req, res) => {
 	const resources = await Resource.find();
-	console.log(req.session.user.isAdmin);
 	res.render(path.join(__dirname, 'views', 'home.ejs'), {user: req.session.user.username, isAdmin: req.session.user.isAdmin, resources });
 });
 
