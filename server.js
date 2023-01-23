@@ -34,6 +34,7 @@ function auth(req, res, next) {
 		return res.sendStatus(401);
 	}
 }
+
 app.use(bodyParser.urlencoded({
 	extended: true
 }));
@@ -75,10 +76,20 @@ app.get('/reservations', auth, async function(req, res) {
 	return res.render(path.join(__dirname, 'views','reservations.ejs'), {user: req.session.user.username, reservations});
 });
 
-app.get('/addReservation', auth, function(req, res) {
-
-	res.render(path.join(__dirname, 'views', 'addReservation.ejs'), {user: req.session.user.username});
+app.get('/addReservation', auth, async function(req, res) {
+	const resources = await Resource.find();
+	res.render(path.join(__dirname, 'views', 'addReservation.ejs'), {user: req.session.user.username, resources});
 });
+
+app.get('/admin', auth, function(req, res) {
+	if(req.session.user.isAdmin){
+		const resources = Resource.find();
+		res.render(path.join(__dirname, 'views', 'admin.ejs'), {user: req.session.user.username, resources});
+	}else{
+		res.redirect("/home");
+	}
+});
+
 
 
 app.post('/api/login', async (req, res) => {
@@ -87,7 +98,7 @@ app.post('/api/login', async (req, res) => {
 	if (!user) {
 		return res.render(path.join(__dirname, 'views', 'error.ejs'), {error : "Incorrect username or password", redirect : "/login"});
 	} else if (await bcrypt.compare(password, user.password)){
-		req.session.user = {username : username};
+		req.session.user = {username : username, isAdmin : user.isAdmin};
 		res.redirect("/home");
 	}
 	else {
@@ -210,6 +221,21 @@ app.post('/api/reservations/delete', auth, async (req, res) => {
 	} catch (err) {
 		return res.status(500).render(path.join(__dirname, 'views', 'error.ejs'),
 			{error : "Erreur lors de la suppression de la réservation", redirect: "/reservations"});
+	}
+});
+
+app.post('/api/resources', auth, async (req, res) => {
+	try {
+		const name = req.body;
+		const resource = new Resource({
+			name,
+			available: true
+		});
+		await resource.save();
+		return res.redirect("/admin");
+	} catch (error) {
+		return res.render(path.join(__dirname, 'views', 'error.ejs'),
+			{error : "La création de la ressource a échoué. Veuillez réessayer ultérieurement.", redirect: "/admin"});
 	}
 });
 

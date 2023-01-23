@@ -5,10 +5,6 @@ const resourceSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    description: {
-        type: String,
-        required: true
-    },
     available: {
         type: Boolean,
         default: true
