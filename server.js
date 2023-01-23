@@ -61,32 +61,30 @@ app.get('/register', function(req, res) {
 	res.render(path.join(__dirname, 'views', 'register.html'));
 });
 app.get('/home', auth, async (req, res) => {
-	const reservations = await Reservation.find({});
-	const availableResources = await Resource.find({ available: true });
-	res.render(path.join(__dirname, 'views', 'home.ejs'), {user: req.session.user.username, reservations, availableResources });
+	const resources = await Resource.find();
+	console.log(req.session.user.isAdmin);
+	res.render(path.join(__dirname, 'views', 'home.ejs'), {user: req.session.user.username, isAdmin: req.session.user.isAdmin, resources });
 });
 
 app.get('/calendar', auth, async function(req, res) {
 	const reservations = await Reservation.find();
-	res.render(path.join(__dirname, 'views', 'calendar.ejs'), {user: req.session.user.username, reservations});
+	res.render(path.join(__dirname, 'views', 'calendar.ejs'), {user: req.session.user.username, isAdmin: req.session.user.isAdmin, reservations});
 });
 
 app.get('/reservations', auth, async function(req, res) {
 	const reservations = await Reservation.find({user : req.session.user.username});
-	return res.render(path.join(__dirname, 'views','reservations.ejs'), {user: req.session.user.username, reservations});
+	return res.render(path.join(__dirname, 'views','reservations.ejs'), {user: req.session.user.username, isAdmin: req.session.user.isAdmin, reservations});
 });
 
 app.get('/addReservation', auth, async function(req, res) {
 	const resources = await Resource.find();
-	res.render(path.join(__dirname, 'views', 'addReservation.ejs'), {user: req.session.user.username, resources});
+	res.render(path.join(__dirname, 'views', 'addReservation.ejs'), {user: req.session.user.username, isAdmin: req.session.user.isAdmin, resources});
 });
 
-app.get('/admin', auth, function(req, res) {
+app.get('/admin', auth, async function(req, res) {
 	if(req.session.user.isAdmin){
-		const resources = Resource.find();
-		res.render(path.join(__dirname, 'views', 'admin.ejs'), {user: req.session.user.username, resources});
-	}else{
-		res.redirect("/home");
+		const resources = await Resource.find();
+		res.render(path.join(__dirname, 'views', 'admin.ejs'), {user: req.session.user.username, isAdmin: req.session.user.isAdmin, resources});
 	}
 });
 
@@ -135,28 +133,22 @@ app.post('/api/register', async (req, res) => {
 	if (plainTextPassword.length < 4) {
 		return res.json({
 			status: 'error',
-			error: 'Le mot de passe doit contenir au moins 5 caractères'
+			error: 'Le mot de passe doit contenir au moins 4 caractères'
 		})
 	}
+	const duplicate = await User.findOne({username});
+	if(duplicate){
+		return res.json({ status: 'error', error: "Nom d'utilisateur indisponible" });
+	}else{
+		const password = await bcrypt.hash(plainTextPassword, 10);
+		const user = new User({ username, password, isAdmin : false });
+		await user.save();
+		req.session.user = {username : username, isAdmin : false};
+		res.json({ status: 'ok' });
 
-	const password = await bcrypt.hash(plainTextPassword, 10);
-
-	try {
-		const response = await User.create({
-			username,
-			password
-		});
-		console.log('Utilisateur créé : ', response);
-	} catch (error) {
-		if (error.code === 11000) {
-			// duplicate key
-			return res.json({ status: 'error', error: "Nom d'utilisateur indisponible" });
-		}
-		throw error
+		console.log('Utilisateur créé : ', req.session.user);
 	}
-
-	res.json({ status: 'ok' });
-})
+});
 
 app.post('/api/reservations', auth, async (req, res) => {
 	try {
@@ -198,11 +190,11 @@ app.post('/api/reservations', auth, async (req, res) => {
 				user
 			});
 			await reservation.save();
-			const resource = await Resource.findOne({ _id: resourceId[i] });
-			resource.available = false;
+			const resource = await Resource.findOne({ name: resourceId[i] });
 			await resource.save();
 		}
 	} catch (error) {
+		console.log(error);
 		return res.render(path.join(__dirname, 'views','error.ejs'),
 			{error : "La création de la réservation a échoué. Veuillez réessayer ultérieurement.", redirect: "/reservations"});
 	}
@@ -226,12 +218,16 @@ app.post('/api/reservations/delete', auth, async (req, res) => {
 
 app.post('/api/resources', auth, async (req, res) => {
 	try {
-		const name = req.body;
-		const resource = new Resource({
-			name,
-			available: true
+		const duplicate = await Resource.findOne({
+			name: req.body.name
 		});
+		if (duplicate) {
+			return res.render(path.join(__dirname, 'views', 'error.ejs'), {error : "Ressource déjà existante", redirect: "/admin"});
+		}
+		const name = req.body.name;
+		const resource = new Resource({name});
 		await resource.save();
+		console.log('Ressource créée : ', resource);
 		return res.redirect("/admin");
 	} catch (error) {
 		return res.render(path.join(__dirname, 'views', 'error.ejs'),

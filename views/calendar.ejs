@@ -55,6 +55,9 @@
                 <li class="nav-item">
                     <a class="nav-link" href="/calendar">Calendrier</a>
                 </li>
+                <li id="admin" class="nav-item" style="display:none">
+                    <a class="nav-link" href="/admin">Admin</a>
+                </li>
             </ul>
             <form class="form-inline ml-auto">
                 <span id="username" class="navbar-text mr-3">Utilisateur : </span>
@@ -70,6 +73,10 @@
     <script>
         let user = "<%= user %>";
         document.getElementById("username").innerHTML += user;
+        let isAdmin = "<%= isAdmin %>";
+        if(isAdmin==="true"){
+            document.getElementById("admin").style.display = "block";
+        }
     </script>
     </body>
 </html>

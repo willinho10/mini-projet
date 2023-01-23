@@ -43,16 +43,14 @@
                 <thead>
                 <tr>
                     <th>Nom</th>
-                    <th>Disponibilité</th>
                 </tr>
                 </thead>
                 <tbody>
-                <% resources.forEach(resource => { %>
-                    <tr>
-                        <td><%= resource.name %></td>
-                        <td><%= resource.available ? 'Disponible' : 'Indisponible' %></td>
-                    </tr>
-                <% }) %>
+                    <% resources.forEach(function(resource) { %>
+                        <tr>
+                            <td><%= resource.name %></td>
+                        </tr>
+                    <% }) %>
                 </tbody>
             </table>
             <h1>Ajouter une ressource</h1>
@@ -64,6 +62,10 @@
                 <button type="submit" class="btn btn-success">Ajouter</button>
             </form>
         </div>
+        <script>
+            let user = "<%= user %>";
+            document.getElementById("username").innerHTML += user;
+        </script>
     </body>
 </html>
 
