@@ -6,6 +6,7 @@ const User = require('./model/user');
 const bcrypt = require('bcryptjs');
 const session = require("express-session");
 const Reservation = require('./model/reservation');
+const Resource = require('./model/resource');
 const rateLimit = require("express-rate-limit");
 
 
@@ -59,25 +60,9 @@ app.get('/register', function(req, res) {
 	res.render(path.join(__dirname, 'views', 'register.html'));
 });
 app.get('/home', auth, async (req, res) => {
-	// Récupérer les réservations existantes à partir de la base de données
 	const reservations = await Reservation.find({});
-
-	// Filtrer les réservations pour n'obtenir que les ressources disponibles
-	const currentDate = new Date();
-	const availableResources = reservations.filter(reservation => {
-		return reservation.dateFin < currentDate;
-	});
-
-	// Récupérer les ID des ressources disponibles
-	const availableResourceIds = availableResources.map(reservation => {
-		return reservation.resourceId;
-	});
-
-	// Envoyer les ID de ressources disponibles à la vue
-	res.render(path.join(__dirname, 'views', 'home.ejs'), {
-		user: req.session.user.username,
-		availableResourceIds
-	});
+	const availableResources = await Resource.find({ available: true });
+	res.render(path.join(__dirname, 'views', 'home.ejs'), {user: req.session.user.username, reservations, availableResources });
 });
 
 app.get('/calendar', auth, async function(req, res) {
@@ -92,7 +77,7 @@ app.get('/reservations', auth, async function(req, res) {
 
 app.get('/addReservation', auth, function(req, res) {
 
-	res.render(path.join(__dirname, 'views', 'addReservation.html'), {user: req.session.user.username});
+	res.render(path.join(__dirname, 'views', 'addReservation.ejs'), {user: req.session.user.username});
 });
 
 
@@ -202,6 +187,9 @@ app.post('/api/reservations', auth, async (req, res) => {
 				user
 			});
 			await reservation.save();
+			const resource = await Resource.findOne({ _id: resourceId[i] });
+			resource.available = false;
+			await resource.save();
 		}
 	} catch (error) {
 		return res.render(path.join(__dirname, 'views','error.ejs'),
