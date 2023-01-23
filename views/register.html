@@ -8,24 +8,25 @@
               integrity="sha384-zCbKRCUGaJDkqS1kPbPd7TveP5iyJE0EjAuZQTgFLD2ylzuqKfdKlfG/eSrtxUkn" crossorigin="anonymous">
     </head>
     <body>
+        <nav class="navbar navbar-light bg-light justify-content-between"><span
+                class="navbar-brand mb-0 h1">Mon site web</span>
+        </nav>
         <div class="container-fluid">
-            <nav class="navbar navbar-light bg-light justify-content-between"><span
-                    class="navbar-brand mb-0 h1">Mon site web</span>
-            </nav>
+
             <h1>Inscrivez-vous</h1>
+            <form id="reg-form">
+                <div class="form-group">
+                    <label for="username">Nom d'utilisateur</label>
+                    <input class="form-control" id="username" type="text" name="username" required="true" placeholder="Username"/>
+                </div>
+                <div class="form-group">
+                    <label for="password">Mot de passe:</label>
+                    <input class="form-control" id="password" type="password" name="password" required="true" placeholder="Password"/>
+                </div>
+                <button class="btn btn-primary" type="submit">Valider</button>
+                <a href="login" class="btn btn-primary float-right">Retourner à la page de connection</a>
+            </form>
         </div>
-        <form id="reg-form">
-            <div class="form-group">
-                <label for="username">Nom d'utilisateur</label>
-                <input class="form-control" id="username" type="text" name="username" required="true" placeholder="Username"/>
-            </div>
-            <div class="form-group">
-                <label for="password">Mot de passe:</label>
-                <input class="form-control" id="password" type="password" name="password" required="true" placeholder="Password"/>
-            </div>
-            <button class="btn btn-primary" type="submit">Valider</button>
-            <a href="login" class="btn btn-primary float-right">Retourner à la page de connection</a>
-        </form>
 
         <script>
             const form = document.getElementById('reg-form')
