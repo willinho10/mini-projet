@@ -50,9 +50,9 @@
                 <tbody>
                 <% reservations.forEach(function(reservation) { %>
                     <tr>
-                        <td><%= reservation.resourceId %></td>
-                        <td><%= reservation.dateDebut %></td>
-                        <td><%= reservation.dateFin %></td>
+                        <td><%= reservation.resourceIdtoLocaleDateString() %></td>
+                        <td><%= reservation.dateDebut.toLocaleDateString() %> <%= reservation.dateDebut.toLocaleTimeString() %></td>
+                        <td><%= reservation.dateFin.toLocaleDateString() %> <%= reservation.dateFin.toLocaleTimeString() %></td>
                         <td><form method="post" action="/api/reservations/delete">
                                 <input type="hidden" name="id" value="<%= reservation._id %>">
                                 <button class="btn btn-danger" type="submit">Delete</button>
