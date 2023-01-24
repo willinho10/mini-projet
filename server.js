@@ -10,10 +10,11 @@ const Resource = require('./model/resource');
 const rateLimit = require("express-rate-limit");
 const routes = require('./routes');
 const auth = require('./auth');
+require('dotenv').config();
 
 
 
-mongoose.connect('mongodb://localhost:27017/login-app-db', {
+mongoose.connect(process.env.MONGODB_URI, {
 	useNewUrlParser: true,
 	useUnifiedTopology: true,
 	useCreateIndex: true
@@ -185,6 +186,6 @@ app.post('/api/resources', auth, async (req, res) => {
 });
 
 
-app.listen(3000, () => {
-	console.log('Server up at 3000');
+app.listen(process.env.PORT, () => {
+	console.log('Server up at ' + process.env.PORT);
 })
