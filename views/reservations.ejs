@@ -50,7 +50,7 @@
                 <tbody>
                 <% reservations.forEach(function(reservation) { %>
                     <tr>
-                        <td><%= reservation.resourceIdtoLocaleDateString() %></td>
+                        <td><%= reservation.resourceId %></td>
                         <td><%= reservation.dateDebut.toLocaleDateString() %> <%= reservation.dateDebut.toLocaleTimeString() %></td>
                         <td><%= reservation.dateFin.toLocaleDateString() %> <%= reservation.dateFin.toLocaleTimeString() %></td>
                         <td><form method="post" action="/api/reservations/delete">

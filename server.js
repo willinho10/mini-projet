@@ -8,8 +8,8 @@ const session = require("express-session");
 const Reservation = require('./model/reservation');
 const Resource = require('./model/resource');
 const rateLimit = require("express-rate-limit");
-const routes = require('./routes');
-const auth = require('./auth');
+/*const routes = require('./routes');
+const auth = require('./auth');*/
 require('dotenv').config();
 
 
@@ -22,7 +22,7 @@ mongoose.connect(process.env.MONGODB_URI, {
 
 const app = express();
 
-app.use(routes);
+//app.use(routes);
 
 app.use(session({
 	secret: 'top secret',
@@ -39,6 +39,57 @@ app.engine('html', require('ejs').renderFile);
 app.set('view engine', 'html');
 
 app.use(bodyParser.json());
+
+function auth(req, res, next) {
+	if (req?.session?.user) {
+		return next();
+	}
+	else {
+		return res.sendStatus(401);
+	}
+}
+
+app.get('/', function(req, res) {
+	if(req?.session?.user){
+		res.redirect("/home");
+	}
+	else{
+		res.redirect("/login");
+	}
+});
+
+app.get('/login', function(req, res) {
+	res.render(path.join(__dirname, 'views', 'login.html'));
+});
+app.get('/register', function(req, res) {
+	res.render(path.join(__dirname, 'views', 'register.html'));
+});
+app.get('/home', auth, async (req, res) => {
+	const resources = await Resource.find();
+	res.render(path.join(__dirname, 'views', 'home.ejs'), {user: req.session.user.username, isAdmin: req.session.user.isAdmin, resources });
+});
+
+app.get('/calendar', auth, async function(req, res) {
+	const reservations = await Reservation.find();
+	res.render(path.join(__dirname, 'views', 'calendar.ejs'), {user: req.session.user.username, isAdmin: req.session.user.isAdmin, reservations});
+});
+
+app.get('/reservations', auth, async function(req, res) {
+	const reservations = await Reservation.find({user : req.session.user.username});
+	return res.render(path.join(__dirname, 'views','reservations.ejs'), {user: req.session.user.username, isAdmin: req.session.user.isAdmin, reservations});
+});
+
+app.get('/addReservation', auth, async function(req, res) {
+	const resources = await Resource.find();
+	res.render(path.join(__dirname, 'views', 'addReservation.ejs'), {user: req.session.user.username, isAdmin: req.session.user.isAdmin, resources});
+});
+
+app.get('/admin', auth, async function(req, res) {
+	if(req.session.user.isAdmin){
+		const resources = await Resource.find();
+		res.render(path.join(__dirname, 'views', 'admin.ejs'), {user: req.session.user.username, isAdmin: req.session.user.isAdmin, resources});
+	}
+});
 
 app.post('/api/login', async (req, res) => {
 	const { username, password } = req.body
