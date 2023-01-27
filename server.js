@@ -11,6 +11,8 @@ const rateLimit = require("express-rate-limit");
 const debug = require("debug")("http");
 require('dotenv').config();
 const morgan = require("morgan");
+const auth = require('./auth.js');
+const routes = require('./routes/routes.js');
 
 
 // Connect to MongoDB
@@ -19,9 +21,7 @@ mongoose.connect(process.env.MONGODB_URI, {
 	useUnifiedTopology: true
 });
 
-
 const app = express();
-
 
 // Initialize the session
 app.use(session({
@@ -46,61 +46,7 @@ app.set('view engine', 'html');
 // initialize the json parser
 app.use(bodyParser.json());
 
-
-//connection middleware
-function auth(req, res, next) {
-	if (req?.session?.user) {
-		return next();
-	}
-	else {
-		return res.sendStatus(401);
-	}
-}
-
-//routes
-app.get('/', function(req, res) {
-	if(req?.session?.user){
-		res.redirect("/home");
-	}
-	else{
-		res.redirect("/login");
-	}
-});
-
-app.get('/login', function(req, res) {
-	res.render(path.join(__dirname, 'views', 'login.html'));
-});
-app.get('/register', function(req, res) {
-	res.render(path.join(__dirname, 'views', 'register.html'));
-});
-app.get('/home', auth, async (req, res) => {
-	const resources = await Resource.find();
-	res.render(path.join(__dirname, 'views', 'home.ejs'), {user: req.session.user.username, isAdmin: req.session.user.isAdmin, resources });
-});
-
-app.get('/calendar', auth, async function(req, res) {
-	const reservations = await Reservation.find();
-	res.render(path.join(__dirname, 'views', 'calendar.ejs'), {user: req.session.user.username, isAdmin: req.session.user.isAdmin, reservations});
-});
-
-app.get('/reservations', auth, async function(req, res) {
-	const reservations = await Reservation.find({user : req.session.user.username});
-	return res.render(path.join(__dirname, 'views','reservations.ejs'), {user: req.session.user.username, isAdmin: req.session.user.isAdmin, reservations});
-});
-
-app.get('/addReservation', auth, async function(req, res) {
-	const resources = await Resource.find();
-	res.render(path.join(__dirname, 'views', 'addReservation.ejs'), {user: req.session.user.username, isAdmin: req.session.user.isAdmin, resources});
-});
-
-app.get('/admin', auth, async function(req, res) {
-	if(req.session.user.isAdmin){
-		const resources = await Resource.find();
-		res.render(path.join(__dirname, 'views', 'admin.ejs'), {user: req.session.user.username, isAdmin: req.session.user.isAdmin, resources});
-	}
-});
-
-
+app.use('/', routes);
 //API
 
 // Verify connection and set the user to call the home page
@@ -117,7 +63,6 @@ app.post('/api/login', async (req, res) => {
 		return res.render(path.join(__dirname, 'views', 'error.ejs'), {error : "Incorrect username or password", redirect : "/login"});
 	}
 });
-
 
 // Deconnection
 app.post('/logout', function(req, res) {
