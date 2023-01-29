@@ -8,12 +8,14 @@ const session = require("express-session");
 const Reservation = require('./model/reservation');
 const Resource = require('./model/resource');
 const rateLimit = require("express-rate-limit");
-/*const routes = require('./routes');
-const auth = require('./auth');*/
+const debug = require("debug")("http");
 require('dotenv').config();
+const morgan = require("morgan");
+const auth = require('./auth.js');
+const routes = require('./routes/routes.js');
 
 
-
+// Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI, {
 	useNewUrlParser: true,
 	useUnifiedTopology: true
@@ -21,75 +23,33 @@ mongoose.connect(process.env.MONGODB_URI, {
 
 const app = express();
 
-//app.use(routes);
-
+// Initialize the session
 app.use(session({
 	secret: 'top secret',
 	resave: true,
 	saveUninitialized: true
 }));
 
+
+app.use(morgan("tiny"));
+
 app.use(bodyParser.urlencoded({
 	extended: true
 }));
+
+//set up the views frontend
 app.use(express.static(path.join(__dirname, 'views')));
 app.set('views', path.join(__dirname , 'views'));
 app.engine('html', require('ejs').renderFile);
 app.set('view engine', 'html');
 
+// initialize the json parser
 app.use(bodyParser.json());
 
-function auth(req, res, next) {
-	if (req?.session?.user) {
-		return next();
-	}
-	else {
-		return res.sendStatus(401);
-	}
-}
+app.use('/', routes);
+//API
 
-app.get('/', function(req, res) {
-	if(req?.session?.user){
-		res.redirect("/home");
-	}
-	else{
-		res.redirect("/login");
-	}
-});
-
-app.get('/login', function(req, res) {
-	res.render(path.join(__dirname, 'views', 'login.html'));
-});
-app.get('/register', function(req, res) {
-	res.render(path.join(__dirname, 'views', 'register.html'));
-});
-app.get('/home', auth, async (req, res) => {
-	const resources = await Resource.find();
-	res.render(path.join(__dirname, 'views', 'home.ejs'), {user: req.session.user.username, isAdmin: req.session.user.isAdmin, resources });
-});
-
-app.get('/calendar', auth, async function(req, res) {
-	const reservations = await Reservation.find();
-	res.render(path.join(__dirname, 'views', 'calendar.ejs'), {user: req.session.user.username, isAdmin: req.session.user.isAdmin, reservations});
-});
-
-app.get('/reservations', auth, async function(req, res) {
-	const reservations = await Reservation.find({user : req.session.user.username});
-	return res.render(path.join(__dirname, 'views','reservations.ejs'), {user: req.session.user.username, isAdmin: req.session.user.isAdmin, reservations});
-});
-
-app.get('/addReservation', auth, async function(req, res) {
-	const resources = await Resource.find();
-	res.render(path.join(__dirname, 'views', 'addReservation.ejs'), {user: req.session.user.username, isAdmin: req.session.user.isAdmin, resources});
-});
-
-app.get('/admin', auth, async function(req, res) {
-	if(req.session.user.isAdmin){
-		const resources = await Resource.find();
-		res.render(path.join(__dirname, 'views', 'admin.ejs'), {user: req.session.user.username, isAdmin: req.session.user.isAdmin, resources});
-	}
-});
-
+// Verify connection and set the user to call the home page
 app.post('/api/login', async (req, res) => {
 	const { username, password } = req.body
 	const user = await User.findOne({ username }).lean()
@@ -104,14 +64,14 @@ app.post('/api/login', async (req, res) => {
 	}
 });
 
-
-
+// Deconnection
 app.post('/logout', function(req, res) {
 
 	req.session.destroy();
 	res.redirect("/login");
 });
 
+// Limit the number of registration to not suffer from a DDoS attack or surcharge the database
 const registerLimiter = rateLimit({
 	windowMs: 15 * 60 * 1000, // 15 minutes
 	max: 10000, // limit each IP to 100 requests per windowMs
@@ -120,6 +80,7 @@ const registerLimiter = rateLimit({
 
 app.use("/api/register", registerLimiter);
 
+// Register a new user and add it to the database
 app.post('/api/register', async (req, res) => {
 	const { username, password: plainTextPassword } = req.body
 	if (!username || typeof username !== 'string') {
@@ -145,11 +106,10 @@ app.post('/api/register', async (req, res) => {
 		await user.save();
 		req.session.user = {username : username, isAdmin : false};
 		res.json({ status: 'ok' });
-
-		console.log('Utilisateur créé : ', req.session.user);
 	}
 });
 
+// make a reservation and add it to the database
 app.post('/api/reservations', auth, async (req, res) => {
 	try {
 		const {resourceId, dateDebut, dateFin, user} = req.body;
@@ -194,7 +154,6 @@ app.post('/api/reservations', auth, async (req, res) => {
 			await resource.save();
 		}
 	} catch (error) {
-		console.log(error);
 		return res.render(path.join(__dirname, 'views','error.ejs'),
 			{error : "La création de la réservation a échoué. Veuillez réessayer ultérieurement.", redirect: "/reservations"});
 	}
@@ -203,6 +162,7 @@ app.post('/api/reservations', auth, async (req, res) => {
 	return res.redirect("/reservations");
 });
 
+// delete a reservation
 app.post('/api/reservations/delete', auth, async (req, res) => {
 	try {
 		const deletedReservation = await Reservation.findByIdAndDelete(req.body.id);
@@ -216,6 +176,7 @@ app.post('/api/reservations/delete', auth, async (req, res) => {
 	}
 });
 
+// create a new resource and add it to the database
 app.post('/api/resources', auth, async (req, res) => {
 	try {
 		const duplicate = await Resource.findOne({
@@ -227,7 +188,6 @@ app.post('/api/resources', auth, async (req, res) => {
 		const name = req.body.name;
 		const resource = new Resource({name});
 		await resource.save();
-		console.log('Ressource créée : ', resource);
 		return res.redirect("/admin");
 	} catch (error) {
 		return res.render(path.join(__dirname, 'views', 'error.ejs'),
@@ -237,5 +197,5 @@ app.post('/api/resources', auth, async (req, res) => {
 
 
 app.listen(process.env.PORT, () => {
-	console.log('Server up at ' + process.env.PORT);
+	debug("HTTP server listening");
 })
