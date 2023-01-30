@@ -1,5 +1,9 @@
 # Système de réservation de ressources (mini-projet)
 
+## Compte administrateur de l'application : 
+	username : admin
+	mot de passe : admin
+
 ## Objectifs
 Ce projet fournit une simple application permettant de réserver des ressources sur une plage de temps.
 L'application nécessite une authentification et donc un enregistrement des utilisateurs.
