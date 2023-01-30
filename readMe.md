@@ -10,7 +10,7 @@ L'application sur les technologies suivantes :
 - MongoDB version 6.0.4
 
 Les sources du projet sont disponibles sous https://github.com/willinho10/mini-projet
-Le projet est déployé en test sous http://...
+Le projet est déployé sous https://exuberant-peppermint-legal.glitch.me/
 
 
 ## Installation
@@ -21,7 +21,7 @@ Avant d'installer le projet, il est nécessaire d'avoir les composants suivants 
 #### Nodejs
 Les étapes de chargement et installation sont :
 - télécharger nodejs '' depuis https://nodejs.org/en/download/
-- exécuter le fichier téléchargé 'node-v18.13.0-x64.msi' pour installer dans XXXXX
+- exécuter le fichier téléchargé 'node-v14.13.0-x64.msi' pour installer
 
 ### Procédure d'installation
 
@@ -33,12 +33,6 @@ Les étapes de chargement et installation sont :
 ```
 git clone https://github.com/willinho10/mini-projet.git
 ```
-- ...
-
-
-#### En test
-
-- copier le contenu du répertoire 'dist' sur le serveur de test dans ...
 
 ## Utilisation
 
@@ -48,22 +42,12 @@ git clone https://github.com/willinho10/mini-projet.git
 
 MongoDb doit avoir été démarré
 
-```
-...
-```
 #### Procédure d'utilisation
 
-1. charger dans un navigateur l'url http://localhost:3000/...
+1. charger dans un navigateur l'url http://localhost:3000/
 
-### En test
+### En déploiement
 
-#### Pré-requis
-
-MongoDb doit avoir été démarré
-
-```
-...
-```
 #### Procédure d'utilisation
 
-1. charger dans un navigateur l'url http:/serveur/...
+1. charger dans un navigateur l'url https://exuberant-peppermint-legal.glitch.me/
