@@ -12,6 +12,7 @@
   },
   "keywords": [],
   "author": "",
+  "homepage": "https://exuberant-peppermint-legal.glitch.me/",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^2.4.3",
